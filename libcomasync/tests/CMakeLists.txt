@@ -1,0 +1,2 @@
+add_executable(libcomasync_tests main.c)
+target_link_libraries(libcomasync_tests libcomasync)
