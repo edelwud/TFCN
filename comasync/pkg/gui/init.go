@@ -1,42 +1,46 @@
 package gui
 
 import (
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"github.com/therecipe/qt/widgets"
 )
 
-func InitApplication(application string, windowTitle string) fyne.Window {
-	a := app.NewWithID(application)
-	a.Settings().SetTheme(theme.LightTheme())
+func CreateStatusBox() *widgets.QGroupBox {
+	statusLayout := widgets.NewQGridLayout2()
+	statusLayout.AddWidget(CreateStatusTable())
 
-	w := a.NewWindow(windowTitle)
-	w.SetMaster()
+	statusGroup := widgets.NewQGroupBox2("Status table", nil)
+	statusGroup.SetLayout(statusLayout)
+	return statusGroup
+}
 
-	programInput := widget.NewMultiLineEntry()
-	programInput.OnChanged = func(newString string) {
-		println(newString)
-	}
-	inputBox := widget.NewVBox(
-		widget.NewLabel("Text input"),
-		programInput,
-	)
+func CreateTransmitterBox() *widgets.QGroupBox {
+	transmitterTextEdit := widgets.NewQTextEdit(nil)
+	transmitterTextEdit.SetPlaceholderText("Input text here")
 
-	programResult := widget.NewMultiLineEntry()
-	programResult.Disable()
+	transmitterLayout := widgets.NewQGridLayout2()
+	transmitterLayout.AddWidget(transmitterTextEdit)
 
-	outputBox := widget.NewVBox(
-		widget.NewLabel("Program result"),
-		programResult,
-	)
+	transmitterGroup := widgets.NewQGroupBox2("Transmitter:", nil)
+	transmitterGroup.SetLayout(transmitterLayout)
+	return transmitterGroup
+}
 
-	status := CreateStatusBox()
+func CreateReceiverBox() *widgets.QGroupBox {
+	receiverTextEdit := widgets.NewQTextEdit(nil)
+	receiverTextEdit.SetReadOnly(true)
 
-	w.SetContent(widget.NewVBox(
-		inputBox,
-		outputBox,
-		status,
-	))
-	return w
+	receiverLayout := widgets.NewQGridLayout2()
+	receiverLayout.AddWidget(receiverTextEdit)
+
+	receiverGroup := widgets.NewQGroupBox2("Receiver:", nil)
+	receiverGroup.SetLayout(receiverLayout)
+	return receiverGroup
+}
+
+func InitLayout() *widgets.QGridLayout {
+	layout := widgets.NewQGridLayout2()
+	layout.AddWidget2(CreateTransmitterBox(), 0, 0, 0)
+	layout.AddWidget2(CreateReceiverBox(), 1, 0, 0)
+	layout.AddWidget2(CreateStatusBox(), 2, 0, 0)
+	return layout
 }

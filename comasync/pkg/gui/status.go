@@ -1,12 +1,12 @@
 package gui
 
 import (
-	"fyne.io/fyne/widget"
+	"github.com/therecipe/qt/widgets"
 )
 
-func CreateStatusBox() *widget.AccordionContainer {
-	status := widget.NewAccordionContainer()
-	statusItem := widget.NewAccordionItem("Status", widget.NewLabel("Heke"))
-	status.Append(statusItem)
-	return status
+func CreateStatusTable() *widgets.QTableWidget {
+	statusTable := widgets.NewQTableWidget(nil)
+	statusTable.SetColumnCount(2)
+	statusTable.SetHorizontalHeaderLabels([]string{"Option name", "Option value"})
+	return statusTable
 }
