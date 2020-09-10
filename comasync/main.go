@@ -10,12 +10,14 @@ import (
 
 func main() {
 	transmitter, err := com.OpenCOM("COM1")
+	defer transmitter.Close()
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return
 	}
 
 	receiver, err := com.OpenCOM("COM2")
+	defer receiver.Close()
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return

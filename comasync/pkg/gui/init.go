@@ -2,7 +2,6 @@ package gui
 
 import (
 	"../com"
-
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -18,9 +17,14 @@ func CreateStatusBox() *widgets.QGroupBox {
 	return statusGroup
 }
 
-func CreateTransmitterBox() *widgets.QGroupBox {
+func CreateTransmitterBox(transmitter com.Port) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
+	transmitterTextEdit.ConnectTextChanged(func() {
+		if _, err := transmitter.Write([]byte("1" + transmitterTextEdit.ToPlainText())); err != nil {
+			ShowErrorMessage(err.Error())
+		}
+	})
 
 	transmitterLayout := widgets.NewQGridLayout2()
 	transmitterLayout.AddWidget(transmitterTextEdit)
@@ -30,9 +34,18 @@ func CreateTransmitterBox() *widgets.QGroupBox {
 	return transmitterGroup
 }
 
-func CreateReceiverBox() *widgets.QGroupBox {
+func CreateReceiverBox(receiver com.Port) *widgets.QGroupBox {
 	receiverTextEdit := widgets.NewQTextEdit(nil)
 	receiverTextEdit.SetReadOnly(true)
+	go func() {
+		for {
+			buf := make([]byte, 2048)
+			if _, err := receiver.Read(buf); err != nil {
+				continue
+			}
+			receiverTextEdit.SetText(string(buf[1:]))
+		}
+	}()
 
 	receiverLayout := widgets.NewQGridLayout2()
 	receiverLayout.AddWidget(receiverTextEdit)
@@ -43,33 +56,9 @@ func CreateReceiverBox() *widgets.QGroupBox {
 }
 
 func InitGUI(transmitter com.Port, receiver com.Port) *widgets.QGridLayout {
-	go func() {
-		buf := make([]byte, 1024)
-		_, err := receiver.Read(buf)
-		if err != nil {
-			ShowErrorMessage(err.Error())
-		}
-		print(string(buf))
-	}()
-
-	_, err := transmitter.Write([]byte("Hey"))
-	if err != nil {
-		ShowErrorMessage(err.Error())
-	}
-
 	layout := widgets.NewQGridLayout2()
-	layout.AddWidget2(CreateTransmitterBox(), 0, 0, 0)
-	layout.AddWidget2(CreateReceiverBox(), 1, 0, 0)
+	layout.AddWidget2(CreateReceiverBox(receiver), 1, 0, 0)
+	layout.AddWidget2(CreateTransmitterBox(transmitter), 0, 0, 0)
 	layout.AddWidget2(CreateStatusBox(), 2, 0, 0)
-
-	err = transmitter.Close()
-	if err != nil {
-		ShowErrorMessage(err.Error())
-	}
-
-	err = receiver.Close()
-	if err != nil {
-		ShowErrorMessage(err.Error())
-	}
 	return layout
 }
