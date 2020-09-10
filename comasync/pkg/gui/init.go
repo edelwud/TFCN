@@ -1,6 +1,8 @@
 package gui
 
 import (
+	"../com"
+
 	"github.com/therecipe/qt/widgets"
 )
 
@@ -40,10 +42,34 @@ func CreateReceiverBox() *widgets.QGroupBox {
 	return receiverGroup
 }
 
-func InitGUI() *widgets.QGridLayout {
+func InitGUI(transmitter com.Port, receiver com.Port) *widgets.QGridLayout {
+	go func() {
+		buf := make([]byte, 1024)
+		_, err := receiver.Read(buf)
+		if err != nil {
+			ShowErrorMessage(err.Error())
+		}
+		print(string(buf))
+	}()
+
+	_, err := transmitter.Write([]byte("Hey"))
+	if err != nil {
+		ShowErrorMessage(err.Error())
+	}
+
 	layout := widgets.NewQGridLayout2()
 	layout.AddWidget2(CreateTransmitterBox(), 0, 0, 0)
 	layout.AddWidget2(CreateReceiverBox(), 1, 0, 0)
 	layout.AddWidget2(CreateStatusBox(), 2, 0, 0)
+
+	err = transmitter.Close()
+	if err != nil {
+		ShowErrorMessage(err.Error())
+	}
+
+	err = receiver.Close()
+	if err != nil {
+		ShowErrorMessage(err.Error())
+	}
 	return layout
 }

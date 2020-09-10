@@ -1,25 +1,23 @@
 package com
 
-import (
-	"github.com/kbinani/win"
-	"golang.org/x/sys/windows"
-)
+import "github.com/Andeling/serial"
 
-type com struct {
-	Handle win.HANDLE
+type Port interface {
+	Write(buf []byte) (int, error)
+	Read(buf []byte) (int, error)
+	Close() error
 }
 
-func (c *com) Initialize(comPortName string) {
-	c.Handle = win.CreateFile(
-		comPortName,
-		windows.GENERIC_READ|windows.GENERIC_WRITE,
-		0,
-		nil,
-		windows.OPEN_EXISTING,
-		windows.FILE_FLAG_OVERLAPPED,
-		0)
-
-	if c.Handle == 0 {
-		panic("Cannot to connect to " + comPortName)
+func OpenCOM(comPort string) (Port, error) {
+	com, err := serial.Open(comPort, &serial.Config{
+		BaudRate:    115200,
+		DataBits:    8,
+		Parity:      serial.ParityNone,
+		StopBits:    serial.StopBitsOne,
+		FlowControl: serial.FlowControlXonXoff,
+	})
+	if err != nil {
+		return nil, err
 	}
+	return com, nil
 }
