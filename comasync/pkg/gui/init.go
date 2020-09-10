@@ -6,9 +6,12 @@ import (
 
 func CreateStatusBox() *widgets.QGroupBox {
 	statusLayout := widgets.NewQGridLayout2()
-	statusLayout.AddWidget(CreateStatusTable())
+	statusTable := CreateStatusTable()
 
-	statusGroup := widgets.NewQGroupBox2("Status table", nil)
+	AddRowToStatusTable(statusTable, "hey", "world")
+	statusLayout.AddWidget(statusTable)
+
+	statusGroup := widgets.NewQGroupBox2("Status table:", nil)
 	statusGroup.SetLayout(statusLayout)
 	return statusGroup
 }
@@ -37,7 +40,7 @@ func CreateReceiverBox() *widgets.QGroupBox {
 	return receiverGroup
 }
 
-func InitLayout() *widgets.QGridLayout {
+func InitGUI() *widgets.QGridLayout {
 	layout := widgets.NewQGridLayout2()
 	layout.AddWidget2(CreateTransmitterBox(), 0, 0, 0)
 	layout.AddWidget2(CreateReceiverBox(), 1, 0, 0)

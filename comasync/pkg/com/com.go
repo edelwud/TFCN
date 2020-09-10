@@ -5,12 +5,12 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-type COM struct {
+type com struct {
 	Handle win.HANDLE
 }
 
-func (com *COM) Initialize(comPortName string) {
-	com.Handle = win.CreateFile(
+func (c *com) Initialize(comPortName string) {
+	c.Handle = win.CreateFile(
 		comPortName,
 		windows.GENERIC_READ|windows.GENERIC_WRITE,
 		0,
@@ -19,7 +19,7 @@ func (com *COM) Initialize(comPortName string) {
 		windows.FILE_FLAG_OVERLAPPED,
 		0)
 
-	if com.Handle == 0 {
+	if c.Handle == 0 {
 		panic("Cannot to connect to " + comPortName)
 	}
 }

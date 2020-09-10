@@ -1,7 +1,8 @@
 package main
 
 import (
-	gui "./pkg/gui"
+	_ "./pkg/com"
+	"./pkg/gui"
 	"os"
 
 	"github.com/therecipe/qt/widgets"
@@ -10,13 +11,12 @@ import (
 func main() {
 	widgets.NewQApplication(len(os.Args), os.Args)
 
-	var window = widgets.NewQMainWindow(nil, 0)
+	window := widgets.NewQMainWindow(nil, 0)
 	window.SetWindowTitle("COM Async Library")
 
-	var centralWidget = widgets.NewQWidget(window, 0)
-	centralWidget.SetLayout(gui.InitLayout())
+	centralWidget := widgets.NewQWidget(window, 0)
+	centralWidget.SetLayout(gui.InitGUI())
 	window.SetCentralWidget(centralWidget)
-
 	window.Show()
 
 	widgets.QApplication_Exec()

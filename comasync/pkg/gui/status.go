@@ -4,9 +4,14 @@ import (
 	"github.com/therecipe/qt/widgets"
 )
 
-func CreateStatusTable() *widgets.QTableWidget {
-	statusTable := widgets.NewQTableWidget(nil)
+func AddRowToStatusTable(table *widgets.QTreeWidget, option string, value string) {
+	table.AddTopLevelItem(widgets.NewQTreeWidgetItem2([]string{option, value}, 0))
+}
+
+func CreateStatusTable() *widgets.QTreeWidget {
+	statusTable := widgets.NewQTreeWidget(nil)
 	statusTable.SetColumnCount(2)
-	statusTable.SetHorizontalHeaderLabels([]string{"Option name", "Option value"})
+	statusTable.SetHeaderLabels([]string{"Option name", "Option value"})
+	statusTable.SetIndentation(0)
 	return statusTable
 }
