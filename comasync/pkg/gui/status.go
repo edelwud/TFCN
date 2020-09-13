@@ -12,6 +12,6 @@ func CreateStatusTable() *widgets.QTreeWidget {
 	statusTable := widgets.NewQTreeWidget(nil)
 	statusTable.SetColumnCount(2)
 	statusTable.SetHeaderLabels([]string{"Option name", "Option value"})
-	statusTable.SetIndentation(0)
+	statusTable.SetIndentation(10)
 	return statusTable
 }

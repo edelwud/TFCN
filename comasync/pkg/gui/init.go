@@ -1,14 +1,19 @@
 package gui
 
 import (
-	"../com"
+	"../serial"
 	"github.com/therecipe/qt/widgets"
+	"time"
 )
 
 func CreateStatusBox() *widgets.QGroupBox {
+
 	statusLayout := widgets.NewQGridLayout2()
 	statusTable := CreateStatusTable()
 
+	AddRowToStatusTable(statusTable, "hey", "world")
+	AddRowToStatusTable(statusTable, "hey", "world")
+	AddRowToStatusTable(statusTable, "hey", "world")
 	AddRowToStatusTable(statusTable, "hey", "world")
 	statusLayout.AddWidget(statusTable)
 
@@ -17,13 +22,15 @@ func CreateStatusBox() *widgets.QGroupBox {
 	return statusGroup
 }
 
-func CreateTransmitterBox(transmitter com.Port) *widgets.QGroupBox {
+func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
-	transmitterTextEdit.ConnectTextChanged(func() {
-		if _, err := transmitter.Write([]byte("1" + transmitterTextEdit.ToPlainText())); err != nil {
+	go transmitterTextEdit.ConnectTextChanged(func() {
+		text := transmitterTextEdit.ToPlainText()
+		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
 		}
+		time.Sleep(time.Millisecond * 50)
 	})
 
 	transmitterLayout := widgets.NewQGridLayout2()
@@ -34,16 +41,16 @@ func CreateTransmitterBox(transmitter com.Port) *widgets.QGroupBox {
 	return transmitterGroup
 }
 
-func CreateReceiverBox(receiver com.Port) *widgets.QGroupBox {
+func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 	receiverTextEdit := widgets.NewQTextEdit(nil)
 	receiverTextEdit.SetReadOnly(true)
 	go func() {
 		for {
-			buf := make([]byte, 2048)
-			if _, err := receiver.Read(buf); err != nil {
+			buf := make([]byte, 1024)
+			if err := receiver.Read(buf); err != nil {
 				continue
 			}
-			receiverTextEdit.SetText(string(buf[1:]))
+			receiverTextEdit.SetText(string(buf))
 		}
 	}()
 
@@ -55,7 +62,7 @@ func CreateReceiverBox(receiver com.Port) *widgets.QGroupBox {
 	return receiverGroup
 }
 
-func InitGUI(transmitter com.Port, receiver com.Port) *widgets.QGridLayout {
+func InitGUI(transmitter serial.Serial, receiver serial.Serial) *widgets.QGridLayout {
 	layout := widgets.NewQGridLayout2()
 	layout.AddWidget2(CreateReceiverBox(receiver), 1, 0, 0)
 	layout.AddWidget2(CreateTransmitterBox(transmitter), 0, 0, 0)

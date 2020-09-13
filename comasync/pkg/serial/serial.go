@@ -1,0 +1,114 @@
+package serial
+
+import (
+	"golang.org/x/sys/windows"
+	"unsafe"
+)
+
+type Serial interface {
+	Open(string) error
+	Close() error
+	Write([]byte) error
+	Read([]byte) error
+}
+
+type SerialPort struct {
+	Name   string
+	Handle windows.Handle
+	DCB    *DCB
+}
+
+var (
+	kernel32                = windows.NewLazyDLL("kernel32.dll")
+	procSetupComm           = kernel32.NewProc("SetupComm")
+	procGetOverlappedResult = kernel32.NewProc("GetOverlappedResult")
+)
+
+func (port *SerialPort) Open(com string) error {
+	var err error
+	port.Handle, err = windows.CreateFile(
+		windows.StringToUTF16Ptr("\\\\.\\"+com),
+		windows.GENERIC_WRITE|windows.GENERIC_READ,
+		0,
+		nil,
+		windows.OPEN_EXISTING,
+		windows.FILE_ATTRIBUTE_NORMAL|windows.FILE_FLAG_OVERLAPPED,
+		windows.InvalidHandle)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (port *SerialPort) Close() error {
+	if err := windows.CloseHandle(port.Handle); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (port *SerialPort) Write(buffer []byte) error {
+	var written uint32
+	var overlapped windows.Overlapped
+	if err := windows.WriteFile(port.Handle, buffer, &written, &overlapped); err != windows.ERROR_IO_PENDING {
+		return err
+	}
+	return nil
+}
+
+func (port *SerialPort) Read(buffer []byte) error {
+	var overlapped windows.Overlapped
+	var err error
+	overlapped.HEvent, err = windows.CreateEvent(nil, 1, 0, nil)
+	if err != nil {
+		return err
+	}
+	defer windows.CloseHandle(overlapped.HEvent)
+
+	var read uint32
+	err = windows.ReadFile(port.Handle, buffer, &read, &overlapped)
+	if err == nil {
+		return nil
+	}
+	if err != windows.ERROR_IO_PENDING {
+		return err
+	}
+	r, _, err := procGetOverlappedResult.Call(uintptr(port.Handle),
+		uintptr(unsafe.Pointer(&overlapped)),
+		uintptr(unsafe.Pointer(&read)), 1)
+	if read == 0 {
+		return err
+	}
+	if r == 0 {
+		return err
+	}
+	return nil
+}
+
+func Open(com string, config *Config) (Serial, error) {
+	serial := &SerialPort{}
+	if err := serial.Open(com); err != nil {
+		return nil, err
+	}
+
+	if r, _, err := procSetupComm.Call(
+		uintptr(serial.Handle),
+		uintptr(config.MaxReadBuffer),
+		uintptr(config.MaxWriteBuffer),
+	); r == 0 {
+		return nil, err
+	}
+
+	dcb := &DCB{}
+	if err := dcb.Build(serial.Handle, config); err != nil {
+		return nil, err
+	}
+
+	timeouts := &CommTimeouts{}
+	if err := timeouts.Configure(serial.Handle, 10, 10); err != nil {
+		return nil, err
+	}
+
+	return serial, nil
+}
