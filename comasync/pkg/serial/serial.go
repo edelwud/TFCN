@@ -10,12 +10,14 @@ type Serial interface {
 	Close() error
 	Write([]byte) error
 	Read([]byte) (uint32, error)
+	GetConfig() Config
 }
 
 type SerialPort struct {
 	Name   string
 	DCB    *DCB
 	Handle windows.Handle
+	Config *Config
 }
 
 var (
@@ -39,6 +41,10 @@ func (port *SerialPort) Open(com string) error {
 	}
 
 	return nil
+}
+
+func (port *SerialPort) GetConfig() Config {
+	return *port.Config
 }
 
 func (port *SerialPort) Close() error {
@@ -98,6 +104,7 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 
 func Open(com string, config *Config) (Serial, error) {
 	serial := &SerialPort{}
+	serial.Config = config
 	if err := serial.Open(com); err != nil {
 		return nil, err
 	}

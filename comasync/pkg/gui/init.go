@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-func CreateStatusBox() *widgets.QGroupBox {
-
+func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroupBox {
 	statusLayout := widgets.NewQGridLayout2()
 	statusTable := CreateStatusTable()
 
-	AddRowToStatusTable(statusTable, "hey", "world")
-	AddRowToStatusTable(statusTable, "hey", "world")
-	AddRowToStatusTable(statusTable, "hey", "world")
-	AddRowToStatusTable(statusTable, "hey", "world")
+	config := transmitter.GetConfig()
+	for name, value := range config.Serialize() {
+		AddRowToStatusTable(statusTable, name, value)
+	}
+
 	statusLayout.AddWidget(statusTable)
 
 	statusGroup := widgets.NewQGroupBox2("Status table:", nil)
@@ -75,6 +75,6 @@ func InitGUI(transmitter serial.Serial, receiver serial.Serial) *widgets.QGridLa
 	layout := widgets.NewQGridLayout2()
 	layout.AddWidget2(CreateReceiverBox(receiver), 1, 0, 0)
 	layout.AddWidget2(CreateTransmitterBox(transmitter), 0, 0, 0)
-	layout.AddWidget2(CreateStatusBox(), 2, 0, 0)
+	layout.AddWidget2(CreateStatusBox(transmitter, receiver), 2, 0, 0)
 	return layout
 }

@@ -10,7 +10,7 @@ import (
 func main() {
 	widgets.NewQApplication(len(os.Args), os.Args)
 
-	transmitter, err := serial.Open("COM1", &serial.Config{
+	config := serial.Config{
 		BaudRate:       256000,
 		ByteSize:       8,
 		Parity:         1,
@@ -19,22 +19,15 @@ func main() {
 		MaxWriteBuffer: 4096,
 		ReadTimeout:    10,
 		WriteTimeout:   10,
-	})
+	}
+
+	transmitter, err := serial.Open("COM1", &config)
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return
 	}
 
-	receiver, err := serial.Open("COM2", &serial.Config{
-		BaudRate:       256000,
-		ByteSize:       8,
-		Parity:         1,
-		StopBits:       0,
-		MaxReadBuffer:  4096,
-		MaxWriteBuffer: 4096,
-		ReadTimeout:    10,
-		WriteTimeout:   10,
-	})
+	receiver, err := serial.Open("COM2", &config)
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return
