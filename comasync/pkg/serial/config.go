@@ -7,4 +7,6 @@ type Config struct {
 	StopBits       uint8
 	MaxReadBuffer  uint32
 	MaxWriteBuffer uint32
+	ReadTimeout    uint32
+	WriteTimeout   uint32
 }

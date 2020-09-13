@@ -43,11 +43,18 @@ func (dcb *DCB) Build(handle windows.Handle, config *Config) error {
 	dcb.Flags |= 0 << 1 // Parity
 	dcb.Flags |= 0 << 2 // OutxCtsFlow
 	dcb.Flags |= 0 << 3 // OutxDsrFlows
+
 	dcb.Flags |= 0 << 4 // DTR
 	dcb.Flags |= 0 << 5
+
 	dcb.Flags |= 0 << 8  // OutX
 	dcb.Flags |= 0 << 9  // InX
 	dcb.Flags |= 0 << 10 // ErrorChar
+
+	dcb.Flags |= 1 << 12 // RtsControl
+	dcb.Flags |= 1 << 13
+
+	dcb.Flags |= 1 << 14 // On error abort
 
 	dcb.XonChar = 0
 	dcb.XoffChar = 0xff

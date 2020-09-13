@@ -9,13 +9,13 @@ type Serial interface {
 	Open(string) error
 	Close() error
 	Write([]byte) error
-	Read([]byte) error
+	Read([]byte) (uint32, error)
 }
 
 type SerialPort struct {
 	Name   string
-	Handle windows.Handle
 	DCB    *DCB
+	Handle windows.Handle
 }
 
 var (
@@ -51,39 +51,49 @@ func (port *SerialPort) Close() error {
 func (port *SerialPort) Write(buffer []byte) error {
 	var written uint32
 	var overlapped windows.Overlapped
-	if err := windows.WriteFile(port.Handle, buffer, &written, &overlapped); err != windows.ERROR_IO_PENDING {
+	if err := windows.WriteFile(
+		port.Handle,
+		GenerateCRCPacket(buffer),
+		&written,
+		&overlapped,
+	); err != windows.ERROR_IO_PENDING {
 		return err
 	}
 	return nil
 }
 
-func (port *SerialPort) Read(buffer []byte) error {
+func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 	var overlapped windows.Overlapped
 	var err error
 	overlapped.HEvent, err = windows.CreateEvent(nil, 1, 0, nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer windows.CloseHandle(overlapped.HEvent)
 
 	var read uint32
 	err = windows.ReadFile(port.Handle, buffer, &read, &overlapped)
 	if err == nil {
-		return nil
+		return 0, nil
 	}
 	if err != windows.ERROR_IO_PENDING {
-		return err
+		return 0, err
 	}
 	r, _, err := procGetOverlappedResult.Call(uintptr(port.Handle),
 		uintptr(unsafe.Pointer(&overlapped)),
 		uintptr(unsafe.Pointer(&read)), 1)
 	if read == 0 {
-		return err
+		return 0, err
 	}
 	if r == 0 {
-		return err
+		return 0, err
 	}
-	return nil
+
+	if err := ConfirmChecksum(buffer, read); err != nil {
+		return 0, err
+	}
+
+	return read, nil
 }
 
 func Open(com string, config *Config) (Serial, error) {
@@ -100,13 +110,13 @@ func Open(com string, config *Config) (Serial, error) {
 		return nil, err
 	}
 
-	dcb := &DCB{}
-	if err := dcb.Build(serial.Handle, config); err != nil {
+	serial.DCB = &DCB{}
+	if err := serial.DCB.Build(serial.Handle, config); err != nil {
 		return nil, err
 	}
 
 	timeouts := &CommTimeouts{}
-	if err := timeouts.Configure(serial.Handle, 10, 10); err != nil {
+	if err := timeouts.Configure(serial.Handle, config.ReadTimeout, config.WriteTimeout); err != nil {
 		return nil, err
 	}
 

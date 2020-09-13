@@ -30,7 +30,7 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
 		}
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 10)
 	})
 
 	transmitterLayout := widgets.NewQGridLayout2()
@@ -46,11 +46,15 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 	receiverTextEdit.SetReadOnly(true)
 	go func() {
 		for {
-			buf := make([]byte, 1024)
-			if err := receiver.Read(buf); err != nil {
+			buf := make([]byte, 4096)
+			n, err := receiver.Read(buf)
+			if err == serial.ErrorChecksumConfirmation {
+				ShowErrorMessage(err.Error())
+			}
+			if err != nil {
 				continue
 			}
-			receiverTextEdit.SetText(string(buf))
+			receiverTextEdit.SetText(string(buf[:n-4]))
 		}
 	}()
 
