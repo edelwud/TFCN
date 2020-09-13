@@ -44,22 +44,27 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 	receiverTextEdit := widgets.NewQTextEdit(nil)
 	receiverTextEdit.SetReadOnly(true)
+
+	statusLabel := widgets.NewQLabel2("OK", nil, 0)
+
 	go func() {
 		for {
 			buf := make([]byte, 4096)
 			n, err := receiver.Read(buf)
 			if err == serial.ErrorChecksumConfirmation {
-				ShowErrorMessage(err.Error())
+				statusLabel.SetText("Error: checksum confirmation error")
 			}
 			if err != nil {
 				continue
 			}
+			statusLabel.SetText("OK")
 			receiverTextEdit.SetText(string(buf[:n-4]))
 		}
 	}()
 
 	receiverLayout := widgets.NewQGridLayout2()
 	receiverLayout.AddWidget(receiverTextEdit)
+	receiverLayout.AddWidget(statusLabel)
 
 	receiverGroup := widgets.NewQGroupBox2("Receiver:", nil)
 	receiverGroup.SetLayout(receiverLayout)
