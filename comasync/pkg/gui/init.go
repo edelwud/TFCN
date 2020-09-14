@@ -27,7 +27,7 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit.SetPlaceholderText("Input text here")
 
 	go transmitterTextEdit.ConnectTextChanged(func() {
-		text := transmitterTextEdit.ToPlainText()
+		text := " " + transmitterTextEdit.ToPlainText()
 		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
 		}
@@ -52,7 +52,7 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 			if _, err := receiver.Read(buf); err != nil {
 				continue
 			}
-			receiverTextEdit.SetText(string(buf))
+			receiverTextEdit.SetText(string(buf[1:]))
 			receiverTextEdit.VerticalScrollBar().SetValue(
 				receiverTextEdit.VerticalScrollBar().Maximum())
 		}

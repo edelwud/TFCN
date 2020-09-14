@@ -55,12 +55,19 @@ func (port *SerialPort) Close() error {
 	return nil
 }
 
+func (port *SerialPort) Clear() error {
+	var flags uint32 = 0x0001 | 0x0002 | 0x004 | 0x0008
+	if r, _, err := procPurgeComm.Call(uintptr(port.Handle), uintptr(flags)); r == 0 {
+		return err
+	}
+	return nil
+}
+
 func (port *SerialPort) Write(buffer []byte) error {
 	var written uint32
 	var overlapped windows.Overlapped
 
-	var flags uint32 = 0x0001 | 0x0004
-	if r, _, err := procPurgeComm.Call(uintptr(port.Handle), uintptr(flags)); r == 0 {
+	if err := port.Clear(); err != nil {
 		return err
 	}
 
@@ -82,7 +89,6 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer windows.CloseHandle(overlapped.HEvent)
 
 	var read uint32
 	err = windows.ReadFile(port.Handle, buffer, &read, &overlapped)
@@ -99,6 +105,10 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 		return 0, err
 	}
 	if r == 0 {
+		return 0, err
+	}
+
+	if err := windows.CloseHandle(overlapped.HEvent); err != nil {
 		return 0, err
 	}
 
