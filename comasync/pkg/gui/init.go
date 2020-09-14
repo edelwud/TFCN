@@ -25,12 +25,13 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
+
 	go transmitterTextEdit.ConnectTextChanged(func() {
 		text := transmitterTextEdit.ToPlainText()
 		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
 		}
-		time.Sleep(time.Millisecond * 10)
+		time.Sleep(time.Millisecond * 15)
 	})
 
 	transmitterLayout := widgets.NewQGridLayout2()
@@ -45,26 +46,20 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 	receiverTextEdit := widgets.NewQTextEdit(nil)
 	receiverTextEdit.SetReadOnly(true)
 
-	statusLabel := widgets.NewQLabel2("OK", nil, 0)
-
 	go func() {
 		for {
-			buf := make([]byte, 4096)
-			n, err := receiver.Read(buf)
-			if err == serial.ErrorChecksumConfirmation {
-				statusLabel.SetText("Error: checksum confirmation error")
-			}
-			if err != nil {
+			buf := make([]byte, receiver.GetConfig().MaxReadBuffer)
+			if _, err := receiver.Read(buf); err != nil {
 				continue
 			}
-			statusLabel.SetText("OK")
-			receiverTextEdit.SetText(string(buf[:n-4]))
+			receiverTextEdit.SetText(string(buf))
+			receiverTextEdit.VerticalScrollBar().SetValue(
+				receiverTextEdit.VerticalScrollBar().Maximum())
 		}
 	}()
 
 	receiverLayout := widgets.NewQGridLayout2()
 	receiverLayout.AddWidget(receiverTextEdit)
-	receiverLayout.AddWidget(statusLabel)
 
 	receiverGroup := widgets.NewQGroupBox2("Receiver:", nil)
 	receiverGroup.SetLayout(receiverLayout)

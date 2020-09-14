@@ -24,6 +24,7 @@ var (
 	kernel32                = windows.NewLazyDLL("kernel32.dll")
 	procSetupComm           = kernel32.NewProc("SetupComm")
 	procGetOverlappedResult = kernel32.NewProc("GetOverlappedResult")
+	procPurgeComm           = kernel32.NewProc("PurgeComm")
 )
 
 func (port *SerialPort) Open(com string) error {
@@ -57,9 +58,15 @@ func (port *SerialPort) Close() error {
 func (port *SerialPort) Write(buffer []byte) error {
 	var written uint32
 	var overlapped windows.Overlapped
+
+	var flags uint32 = 0x0001 | 0x0004
+	if r, _, err := procPurgeComm.Call(uintptr(port.Handle), uintptr(flags)); r == 0 {
+		return err
+	}
+
 	if err := windows.WriteFile(
 		port.Handle,
-		GenerateCRCPacket(buffer),
+		buffer,
 		&written,
 		&overlapped,
 	); err != windows.ERROR_IO_PENDING {
@@ -92,10 +99,6 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 		return 0, err
 	}
 	if r == 0 {
-		return 0, err
-	}
-
-	if err := ConfirmChecksum(buffer, read); err != nil {
 		return 0, err
 	}
 

@@ -39,10 +39,11 @@ func (dcb *DCB) Build(handle windows.Handle, config *Config) error {
 	dcb.Parity = config.Parity
 	dcb.StopBits = config.StopBits
 
-	dcb.Flags |= 1 << 0 // Binary
-	dcb.Flags |= 0 << 1 // Parity
-	dcb.Flags |= 0 << 2 // OutxCtsFlow
-	dcb.Flags |= 0 << 3 // OutxDsrFlows
+	dcb.Flags |= 1 << 0    // Binary
+	dcb.Flags |= 0 << 1    // Parity
+	dcb.Flags |= 1 << 2    // OutxCtsFlow
+	dcb.Flags |= 1 << 3    // OutxDsrFlows
+	dcb.Flags |= 0x02 << 4 // DtrControl (HANDSHAKE)
 
 	dcb.Flags |= 0 << 4 // DTR
 	dcb.Flags |= 0 << 5
@@ -51,8 +52,7 @@ func (dcb *DCB) Build(handle windows.Handle, config *Config) error {
 	dcb.Flags |= 0 << 9  // InX
 	dcb.Flags |= 0 << 10 // ErrorChar
 
-	dcb.Flags |= 1 << 12 // RtsControl
-	dcb.Flags |= 1 << 13
+	dcb.Flags |= 0x02 << 12 // RtsControl (HANDSHAKE)
 
 	dcb.Flags |= 1 << 14 // On error abort
 
