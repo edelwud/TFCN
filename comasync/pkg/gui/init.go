@@ -2,6 +2,7 @@ package gui
 
 import (
 	"../serial"
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/widgets"
 	"time"
 )
@@ -15,6 +16,8 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 		AddRowToStatusTable(statusTable, name, value)
 	}
 
+	statusTable.SortItems(0, core.Qt__AscendingOrder)
+
 	statusLayout.AddWidget(statusTable)
 
 	statusGroup := widgets.NewQGroupBox2("Status table:", nil)
@@ -26,7 +29,7 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
 
-	go transmitterTextEdit.ConnectTextChanged(func() {
+	transmitterTextEdit.ConnectTextChanged(func() {
 		text := " " + transmitterTextEdit.ToPlainText()
 		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
@@ -53,8 +56,6 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 				continue
 			}
 			receiverTextEdit.SetText(string(buf[1:]))
-			receiverTextEdit.VerticalScrollBar().SetValue(
-				receiverTextEdit.VerticalScrollBar().Maximum())
 		}
 	}()
 

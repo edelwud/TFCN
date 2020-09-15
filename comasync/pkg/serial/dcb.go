@@ -40,7 +40,7 @@ func (dcb *DCB) Build(handle windows.Handle, config *Config) error {
 	dcb.StopBits = config.StopBits
 
 	dcb.Flags |= 1 << 0    // Binary
-	dcb.Flags |= 0 << 1    // Parity
+	dcb.Flags |= 1 << 1    // Parity
 	dcb.Flags |= 1 << 2    // OutxCtsFlow
 	dcb.Flags |= 1 << 3    // OutxDsrFlows
 	dcb.Flags |= 0x02 << 4 // DtrControl (HANDSHAKE)

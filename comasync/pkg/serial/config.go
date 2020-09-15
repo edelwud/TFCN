@@ -36,24 +36,24 @@ func (config *Config) Serialize() map[string]string {
 	var stopBits string
 	switch config.StopBits {
 	case 0:
-		stopBits = "1 STOP BIT"
+		stopBits = "1"
 		break
 	case 1:
-		stopBits = "1.5 STOP BITS"
+		stopBits = "1.5"
 		break
 	case 2:
-		stopBits = "2 STOP BITS"
+		stopBits = "2"
 		break
 	}
 
 	return map[string]string{
-		"Baud rate":             strconv.Itoa(int(config.BaudRate)),
-		"Byte size":             strconv.Itoa(int(config.ByteSize)),
+		"Baud rate":             strconv.Itoa(int(config.BaudRate)) + " baud",
+		"Byte size":             strconv.Itoa(int(config.ByteSize)) + " bit",
 		"Parity":                parity,
-		"Stop bits":             stopBits,
-		"Max read buffer size":  strconv.Itoa(int(config.MaxReadBuffer)),
-		"Max write buffer size": strconv.Itoa(int(config.MaxWriteBuffer)),
-		"Read timeout":          strconv.Itoa(int(config.ReadTimeout)),
-		"Write timeout":         strconv.Itoa(int(config.WriteTimeout)),
+		"Stop bits":             stopBits + " bit",
+		"Max read buffer size":  strconv.Itoa(int(config.MaxReadBuffer)) + " bytes",
+		"Max write buffer size": strconv.Itoa(int(config.MaxWriteBuffer)) + " bytes",
+		"Timeout read":          strconv.Itoa(int(config.ReadTimeout)) + " msec",
+		"Timeout write":         strconv.Itoa(int(config.WriteTimeout)) + " msec",
 	}
 }

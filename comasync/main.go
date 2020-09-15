@@ -35,6 +35,8 @@ func main() {
 
 	window := widgets.NewQMainWindow(nil, 0)
 	window.SetWindowTitle("COM Async Library")
+	window.SetFixedWidth(400)
+	window.SetFixedHeight(800)
 
 	centralWidget := widgets.NewQWidget(window, 0)
 	centralWidget.SetLayout(gui.InitGUI(transmitter, receiver))
