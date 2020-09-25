@@ -2,8 +2,11 @@ package gui
 
 import (
 	"../serial"
+	"github.com/pkg/errors"
 	"github.com/therecipe/qt/core"
+	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
+	"regexp"
 	"time"
 )
 
@@ -25,13 +28,43 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 	return statusGroup
 }
 
+func ValidateTextEdit(transmitterTextEdit *widgets.QTextEdit) error {
+	text := transmitterTextEdit.ToPlainText()
+	bytes := []byte(text)
+	otherSymbols := regexp.MustCompile("[^0-1]+")
+	if index := otherSymbols.FindIndex(bytes); index != nil {
+		newText := text[:index[0]]
+		newText += text[index[1]:]
+		transmitterTextEdit.SetText(newText)
+
+		newCursor := transmitterTextEdit.TextCursor()
+		newCursor.SetPosition(len(newText), gui.QTextCursor__MoveAnchor)
+		transmitterTextEdit.SetTextCursor(newCursor)
+		return errors.New("Symbols are not accepted")
+	}
+	return nil
+}
+
 func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
 
 	transmitterTextEdit.ConnectTextChanged(func() {
-		bytes := []byte(transmitterTextEdit.ToPlainText())
-		if err := transmitter.Write(bytes); err != nil {
+		if err := ValidateTextEdit(transmitterTextEdit); err != nil {
+			return
+		}
+
+		text := transmitterTextEdit.ToPlainText()
+		bytes := []byte(text)
+
+		var newBytes []byte
+		for i := 0; i < len(text)/8; i += 1 {
+			newBytes = append(newBytes, bytes[:8]...)
+			newBytes = append(newBytes, byte(' '))
+			bytes = bytes[8:]
+		}
+
+		if err := transmitter.Write(newBytes); err != nil {
 			ShowErrorMessage(err.Error())
 		}
 		time.Sleep(time.Millisecond * 10)
