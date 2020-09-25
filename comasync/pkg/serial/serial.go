@@ -14,11 +14,19 @@ type Serial interface {
 }
 
 type SerialPort struct {
-	Name   string
-	DCB    *DCB
-	Handle windows.Handle
-	Config *Config
+	Name     string
+	DCB      *DCB
+	Timeouts *CommTimeouts
+	Handle   windows.Handle
+	Config   *Config
 }
+
+const (
+	CleatInBuffer         = 0x0008
+	ClearOutBuffer        = 0x0004
+	CancelWriteOperations = 0x0001
+	CancelReadOperations  = 0x0002
+)
 
 var (
 	kernel32                = windows.NewLazyDLL("kernel32.dll")
@@ -55,8 +63,7 @@ func (port *SerialPort) Close() error {
 	return nil
 }
 
-func (port *SerialPort) Clear() error {
-	var flags uint32 = 0x0001 | 0x0002 | 0x004 | 0x0008
+func (port *SerialPort) Clear(flags uint32) error {
 	if r, _, err := procPurgeComm.Call(uintptr(port.Handle), uintptr(flags)); r == 0 {
 		return err
 	}
@@ -64,17 +71,17 @@ func (port *SerialPort) Clear() error {
 }
 
 func (port *SerialPort) Write(buffer []byte) error {
-	var written uint32
 	var overlapped windows.Overlapped
 
-	if err := port.Clear(); err != nil {
+	packet := NewPacket(buffer, XoffSymbol, XonSymbol)
+	if err := port.Clear(ClearOutBuffer | CancelWriteOperations); err != nil {
 		return err
 	}
 
 	if err := windows.WriteFile(
 		port.Handle,
-		buffer,
-		&written,
+		packet.ToBytes(),
+		nil,
 		&overlapped,
 	); err != windows.ERROR_IO_PENDING {
 		return err
@@ -90,6 +97,10 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 		return 0, err
 	}
 
+	if err := port.Clear(CancelReadOperations); err != nil {
+		return 0, err
+	}
+
 	var read uint32
 	err = windows.ReadFile(port.Handle, buffer, &read, &overlapped)
 	if err == nil {
@@ -98,17 +109,15 @@ func (port *SerialPort) Read(buffer []byte) (uint32, error) {
 	if err != windows.ERROR_IO_PENDING {
 		return 0, err
 	}
-	r, _, err := procGetOverlappedResult.Call(uintptr(port.Handle),
+	if r, _, err := procGetOverlappedResult.Call(uintptr(port.Handle),
 		uintptr(unsafe.Pointer(&overlapped)),
-		uintptr(unsafe.Pointer(&read)), 1)
-	if read == 0 {
+		uintptr(unsafe.Pointer(&read)), 1); r == 0 {
 		return 0, err
 	}
-	if r == 0 {
-		return 0, err
-	}
-
 	if err := windows.CloseHandle(overlapped.HEvent); err != nil {
+		return 0, err
+	}
+	if read == 0 {
 		return 0, err
 	}
 
@@ -135,8 +144,12 @@ func Open(com string, config *Config) (Serial, error) {
 		return nil, err
 	}
 
-	timeouts := &CommTimeouts{}
-	if err := timeouts.Configure(serial.Handle, config.ReadTimeout, config.WriteTimeout); err != nil {
+	serial.Timeouts = &CommTimeouts{}
+	if err := serial.Timeouts.Configure(serial.Handle, config.ReadTimeout, config.WriteTimeout); err != nil {
+		return nil, err
+	}
+
+	if err := serial.Clear(ClearOutBuffer | CleatInBuffer | CancelWriteOperations | CancelReadOperations); err != nil {
 		return nil, err
 	}
 

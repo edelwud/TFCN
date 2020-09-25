@@ -13,6 +13,11 @@ type Config struct {
 	WriteTimeout   uint32
 }
 
+const (
+	XoffSymbol = 0xff
+	XonSymbol  = 0x0
+)
+
 func (config *Config) Serialize() map[string]string {
 	var parity string
 	switch config.Parity {

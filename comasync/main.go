@@ -7,36 +7,44 @@ import (
 	"os"
 )
 
+const (
+	TransmitterComm = "COM1"
+	ReceiverComm    = "COM2"
+	WindowWidth     = 400
+	WindowHeight    = 800
+	WindowTitle     = "COM Async Library"
+)
+
+var config = serial.Config{
+	BaudRate:       9600,
+	ByteSize:       8,
+	Parity:         1,
+	StopBits:       1,
+	MaxReadBuffer:  4096,
+	MaxWriteBuffer: 4096,
+	ReadTimeout:    100,
+	WriteTimeout:   100,
+}
+
 func main() {
 	widgets.NewQApplication(len(os.Args), os.Args)
 
-	config := serial.Config{
-		BaudRate:       256000,
-		ByteSize:       8,
-		Parity:         1,
-		StopBits:       0,
-		MaxReadBuffer:  4096,
-		MaxWriteBuffer: 4096,
-		ReadTimeout:    10,
-		WriteTimeout:   10,
-	}
-
-	transmitter, err := serial.Open("COM1", &config)
+	transmitter, err := serial.Open(TransmitterComm, &config)
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return
 	}
 
-	receiver, err := serial.Open("COM2", &config)
+	receiver, err := serial.Open(ReceiverComm, &config)
 	if err != nil {
 		gui.ShowErrorMessage(err.Error())
 		return
 	}
 
 	window := widgets.NewQMainWindow(nil, 0)
-	window.SetWindowTitle("COM Async Library")
-	window.SetFixedWidth(400)
-	window.SetFixedHeight(800)
+	window.SetWindowTitle(WindowTitle)
+	window.SetFixedWidth(WindowWidth)
+	window.SetFixedHeight(WindowHeight)
 
 	centralWidget := widgets.NewQWidget(window, 0)
 	centralWidget.SetLayout(gui.InitGUI(transmitter, receiver))

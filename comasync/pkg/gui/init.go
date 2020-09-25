@@ -30,11 +30,11 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit.SetPlaceholderText("Input text here")
 
 	transmitterTextEdit.ConnectTextChanged(func() {
-		text := " " + transmitterTextEdit.ToPlainText()
-		if err := transmitter.Write([]byte(text)); err != nil {
+		bytes := []byte(transmitterTextEdit.ToPlainText())
+		if err := transmitter.Write(bytes); err != nil {
 			ShowErrorMessage(err.Error())
 		}
-		time.Sleep(time.Millisecond * 15)
+		time.Sleep(time.Millisecond * 10)
 	})
 
 	transmitterLayout := widgets.NewQGridLayout2()
