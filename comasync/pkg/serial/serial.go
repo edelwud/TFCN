@@ -74,6 +74,7 @@ func (port *SerialPort) Write(buffer []byte) error {
 	var overlapped windows.Overlapped
 
 	packet := NewPacket(buffer, XoffSymbol, XonSymbol)
+	packet.BitStuffing()
 	if err := port.Clear(ClearOutBuffer | CancelWriteOperations); err != nil {
 		return err
 	}

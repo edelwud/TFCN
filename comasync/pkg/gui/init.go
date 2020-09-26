@@ -45,6 +45,34 @@ func ValidateTextEdit(transmitterTextEdit *widgets.QTextEdit) error {
 	return nil
 }
 
+func ConfigureBackgroundColor(data []byte, color string) []byte {
+	var newBytes []byte
+	newBytes = append(newBytes, []byte("<font style=\"background: "+color+"\">")...)
+	newBytes = append(newBytes, data...)
+	newBytes = append(newBytes, []byte("</font>")...)
+	return newBytes
+}
+
+func BeautifyBits(data []byte) []byte {
+	var result []byte
+	for _, bit := range data {
+		result = append(result, bit)
+		if len(result) >= 8 {
+			if string(result[len(result)-8:]) == serial.BitStuffingFlag {
+				result = result[:len(result)-8]
+				result = append(result, ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")...)
+			}
+		}
+		if len(result) >= 46 {
+			if string(result[len(result)-46:len(result)-1]) == string(ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")) {
+				result = result[:len(result)-1]
+				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "blue")...)
+			}
+		}
+	}
+	return result
+}
+
 func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 	transmitterTextEdit := widgets.NewQTextEdit(nil)
 	transmitterTextEdit.SetPlaceholderText("Input text here")
@@ -53,22 +81,14 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 		if err := ValidateTextEdit(transmitterTextEdit); err != nil {
 			return
 		}
-
 		text := transmitterTextEdit.ToPlainText()
-		bytes := []byte(text)
-
-		var newBytes []byte
-		for i := 0; i < len(text)/8; i += 1 {
-			newBytes = append(newBytes, bytes[:8]...)
-			newBytes = append(newBytes, byte(' '))
-			bytes = bytes[8:]
-		}
-
-		if err := transmitter.Write(newBytes); err != nil {
+		if err := transmitter.Write([]byte(text)); err != nil {
 			ShowErrorMessage(err.Error())
 		}
 		time.Sleep(time.Millisecond * 10)
 	})
+
+	print(len(ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")))
 
 	transmitterLayout := widgets.NewQGridLayout2()
 	transmitterLayout.AddWidget(transmitterTextEdit)
@@ -88,7 +108,9 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 			if _, err := receiver.Read(buf); err != nil {
 				continue
 			}
-			receiverTextEdit.SetText(string(buf[1:]))
+
+			result := string(BeautifyBits(buf))
+			receiverTextEdit.SetHtml(result)
 		}
 	}()
 

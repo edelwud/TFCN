@@ -22,7 +22,7 @@ var config = serial.Config{
 	StopBits:       1,
 	MaxReadBuffer:  4096,
 	MaxWriteBuffer: 4096,
-	ReadTimeout:    150,
+	ReadTimeout:    10,
 	WriteTimeout:   100,
 }
 
