@@ -2,6 +2,7 @@ package serial
 
 import (
 	"golang.org/x/sys/windows"
+	"sync"
 	"unsafe"
 )
 
@@ -19,6 +20,7 @@ type SerialPort struct {
 	Timeouts *CommTimeouts
 	Handle   windows.Handle
 	Config   *Config
+	Mux      sync.Mutex
 }
 
 const (
@@ -71,6 +73,7 @@ func (port *SerialPort) Clear(flags uint32) error {
 }
 
 func (port *SerialPort) Write(buffer []byte) error {
+	port.Mux.Lock()
 	var overlapped windows.Overlapped
 
 	packet := NewPacket(buffer, XoffSymbol, XonSymbol)
@@ -87,6 +90,7 @@ func (port *SerialPort) Write(buffer []byte) error {
 	); err != windows.ERROR_IO_PENDING {
 		return err
 	}
+	port.Mux.Unlock()
 	return nil
 }
 

@@ -2,12 +2,17 @@ package gui
 
 import (
 	"../serial"
+	"bytes"
 	"github.com/pkg/errors"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
 	"regexp"
 	"time"
+)
+
+var (
+	dataReceived = make(chan []byte)
 )
 
 func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroupBox {
@@ -18,9 +23,20 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 	for name, value := range config.Serialize() {
 		AddRowToStatusTable(statusTable, name, value)
 	}
-
 	statusTable.SortItems(0, core.Qt__AscendingOrder)
 
+	receivedArea := widgets.NewQTextEdit(nil)
+	receivedArea.SetFixedHeight(75)
+	receivedArea.SetReadOnly(true)
+
+	go func() {
+		for {
+			buf := <-dataReceived
+			receivedArea.SetHtml(string(BeautifyBits(buf)))
+		}
+	}()
+
+	statusLayout.AddWidget(receivedArea)
 	statusLayout.AddWidget(statusTable)
 
 	statusGroup := widgets.NewQGroupBox2("Status table:", nil)
@@ -30,9 +46,8 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 
 func ValidateTextEdit(transmitterTextEdit *widgets.QTextEdit) error {
 	text := transmitterTextEdit.ToPlainText()
-	bytes := []byte(text)
 	otherSymbols := regexp.MustCompile("[^0-1]+")
-	if index := otherSymbols.FindIndex(bytes); index != nil {
+	if index := otherSymbols.FindIndex([]byte(text)); index != nil {
 		newText := text[:index[0]]
 		newText += text[index[1]:]
 		transmitterTextEdit.SetText(newText)
@@ -64,7 +79,7 @@ func BeautifyBits(data []byte) []byte {
 			}
 		}
 		if len(result) >= 46 {
-			if string(result[len(result)-46:len(result)-1]) == string(ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")) {
+			if bytes.Equal(result[len(result)-46:len(result)-1], ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")) {
 				result = result[:len(result)-1]
 				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "blue")...)
 			}
@@ -88,8 +103,6 @@ func CreateTransmitterBox(transmitter serial.Serial) *widgets.QGroupBox {
 		time.Sleep(time.Millisecond * 10)
 	})
 
-	print(len(ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")))
-
 	transmitterLayout := widgets.NewQGridLayout2()
 	transmitterLayout.AddWidget(transmitterTextEdit)
 
@@ -108,6 +121,8 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 			if _, err := receiver.Read(buf); err != nil {
 				continue
 			}
+
+			dataReceived <- buf
 
 			result := string(BeautifyBits(buf))
 			receiverTextEdit.SetHtml(result)

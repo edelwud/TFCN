@@ -24,6 +24,10 @@ func (packet Packet) ToBytes() []byte {
 	return dataCopy
 }
 
+func (packet Packet) ToString() string {
+	return string(packet.Data)
+}
+
 func (packet Packet) Get8BitArray() []string {
 	var result []string
 	dataCopy := make([]byte, len(packet.Data))
@@ -52,4 +56,8 @@ func (packet *Packet) BitStuffing() {
 		}
 	}
 	packet.Data = result
+}
+
+func (packet *Packet) DeBitStuffing() {
+
 }

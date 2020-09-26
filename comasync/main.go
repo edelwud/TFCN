@@ -11,7 +11,7 @@ const (
 	TransmitterComm = "COM1"
 	ReceiverComm    = "COM2"
 	WindowWidth     = 400
-	WindowHeight    = 800
+	WindowHeight    = 600
 	WindowTitle     = "COM Async Library"
 )
 
