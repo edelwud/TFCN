@@ -3,12 +3,13 @@ package gui
 import (
 	"../serial"
 	"bytes"
+	"regexp"
+	"time"
+
 	"github.com/pkg/errors"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/widgets"
-	"regexp"
-	"time"
 )
 
 var (
@@ -32,7 +33,11 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 	go func() {
 		for {
 			buf := <-dataReceived
-			receivedArea.SetHtml(string(BeautifyBits(buf)))
+
+			buf = BeautifyFlagBits(buf)
+			buf = BeautifyBitStuffed(buf)
+
+			receivedArea.SetHtml(string(buf))
 		}
 	}()
 
@@ -68,20 +73,29 @@ func ConfigureBackgroundColor(data []byte, color string) []byte {
 	return newBytes
 }
 
-func BeautifyBits(data []byte) []byte {
+func BeautifyFlagBits(data []byte) []byte {
 	var result []byte
 	for _, bit := range data {
 		result = append(result, bit)
 		if len(result) >= 8 {
 			if string(result[len(result)-8:]) == serial.BitStuffingFlag {
 				result = result[:len(result)-8]
-				result = append(result, ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")...)
+				result = append(result, ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "yellow")...)
 			}
 		}
-		if len(result) >= 46 {
-			if bytes.Equal(result[len(result)-46:len(result)-1], ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "red")) {
+	}
+	return result
+}
+
+func BeautifyBitStuffed(data []byte) []byte {
+	var result []byte
+	for _, bit := range data {
+		result = append(result, bit)
+		if len(result) >= 49 {
+			if bytes.Equal(result[len(result)-49:len(result)-1],
+				ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "yellow")) {
 				result = result[:len(result)-1]
-				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "blue")...)
+				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "cyan")...)
 			}
 		}
 	}
@@ -117,15 +131,17 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 
 	go func() {
 		for {
-			buf := make([]byte, receiver.GetConfig().MaxReadBuffer)
-			if _, err := receiver.Read(buf); err != nil {
+			packet, err := receiver.Read()
+			if err != nil {
 				continue
 			}
 
-			dataReceived <- buf
+			dataReceived <- packet.Data
+			packet.DeBitStuffing()
 
-			result := string(BeautifyBits(buf))
-			receiverTextEdit.SetHtml(result)
+			buf := BeautifyFlagBits(packet.Data)
+
+			receiverTextEdit.SetHtml(string(buf))
 		}
 	}()
 

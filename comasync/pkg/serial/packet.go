@@ -59,5 +59,19 @@ func (packet *Packet) BitStuffing() {
 }
 
 func (packet *Packet) DeBitStuffing() {
-
+	var result []byte
+	var flag = false
+	for _, bit := range packet.Data {
+		if flag {
+			flag = false
+			continue
+		}
+		result = append(result, bit)
+		if len(result) >= 8 {
+			if string(result[len(result)-8:]) == BitStuffingFlag {
+				flag = true
+			}
+		}
+	}
+	packet.Data = result
 }

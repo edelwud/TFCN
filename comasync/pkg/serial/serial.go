@@ -10,7 +10,7 @@ type Serial interface {
 	Open(string) error
 	Close() error
 	Write([]byte) error
-	Read([]byte) (uint32, error)
+	Read() (*Packet, error)
 	GetConfig() Config
 }
 
@@ -94,39 +94,41 @@ func (port *SerialPort) Write(buffer []byte) error {
 	return nil
 }
 
-func (port *SerialPort) Read(buffer []byte) (uint32, error) {
+func (port *SerialPort) Read() (*Packet, error) {
+	buffer := make([]byte, port.GetConfig().MaxReadBuffer)
+
 	var overlapped windows.Overlapped
 	var err error
 	overlapped.HEvent, err = windows.CreateEvent(nil, 1, 0, nil)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err := port.Clear(CancelReadOperations); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var read uint32
 	err = windows.ReadFile(port.Handle, buffer, &read, &overlapped)
 	if err == nil {
-		return 0, nil
+		return nil, nil
 	}
 	if err != windows.ERROR_IO_PENDING {
-		return 0, err
+		return nil, err
 	}
 	if r, _, err := procGetOverlappedResult.Call(uintptr(port.Handle),
 		uintptr(unsafe.Pointer(&overlapped)),
 		uintptr(unsafe.Pointer(&read)), 1); r == 0 {
-		return 0, err
+		return nil, err
 	}
 	if err := windows.CloseHandle(overlapped.HEvent); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if read == 0 {
-		return 0, err
+		return nil, err
 	}
 
-	return read, nil
+	return NewPacket(buffer[:read], XoffSymbol, XonSymbol), nil
 }
 
 func Open(com string, config *Config) (Serial, error) {
