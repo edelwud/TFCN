@@ -52,8 +52,8 @@ func (config *Config) Serialize() map[string]string {
 	}
 
 	return map[string]string{
-		"Bit to stuff":          string(BitToStuff),
-		"Frame flag":            BitStuffingFlag + string(CompletedFlag),
+		"Bit to stuff":          string(BitToStuff) + " bit",
+		"Frame flag":            BitStuffingFlag + string(CompletedFlag) + " bits",
 		"Baud rate":             strconv.Itoa(int(config.BaudRate)) + " baud",
 		"Byte size":             strconv.Itoa(int(config.ByteSize)) + " bit",
 		"Parity":                parity,

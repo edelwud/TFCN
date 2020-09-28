@@ -71,20 +71,6 @@ func ConfigureBackgroundColor(data []byte, color string) []byte {
 	return newBytes
 }
 
-func BeautifyFlagBits(data []byte) []byte {
-	var result []byte
-	for _, bit := range data {
-		result = append(result, bit)
-		if len(result) >= 8 {
-			if string(result[len(result)-8:]) == serial.BitStuffingFlag {
-				result = result[:len(result)-8]
-				result = append(result, ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "yellow")...)
-			}
-		}
-	}
-	return result
-}
-
 func BeautifyBitStuffed(data []byte) []byte {
 	var result []byte
 	for _, bit := range data[8 : len(data)-9] {
