@@ -6,8 +6,9 @@ type Packet struct {
 	End   byte
 }
 
-const BitStuffingFlag = "01101101"
-const BitToStuff = '1'
+const BitStuffingFlag = "0110110"
+const BitToStuff = '0'
+const CompletedFlag = '1'
 
 func NewPacket(data []byte, start byte, end byte) *Packet {
 	return &Packet{
@@ -49,26 +50,34 @@ func (packet *Packet) BitStuffing() {
 	for _, bit := range packet.Data {
 		temp = append(temp, bit)
 		result = append(result, bit)
-		if len(temp) >= 8 {
-			if string(temp[len(temp)-8:]) == BitStuffingFlag {
+		if len(temp) >= 7 {
+			if string(temp[len(temp)-7:]) == BitStuffingFlag {
 				result = append(result, BitToStuff)
 			}
 		}
 	}
-	packet.Data = result
+
+	response := make([]byte, 0)
+	response = append(response, []byte(BitStuffingFlag)...)
+	response = append(response, CompletedFlag)
+	response = append(response, result...)
+	response = append(response, []byte(BitStuffingFlag)...)
+	response = append(response, CompletedFlag)
+
+	packet.Data = response
 }
 
 func (packet *Packet) DeBitStuffing() {
 	var result []byte
 	var flag = false
-	for _, bit := range packet.Data {
+	for _, bit := range packet.Data[8 : len(packet.Data)-9] {
 		if flag {
 			flag = false
 			continue
 		}
 		result = append(result, bit)
-		if len(result) >= 8 {
-			if string(result[len(result)-8:]) == BitStuffingFlag {
+		if len(result) >= 7 {
+			if string(result[len(result)-7:]) == BitStuffingFlag {
 				flag = true
 			}
 		}

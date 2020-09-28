@@ -22,19 +22,19 @@ func (config *Config) Serialize() map[string]string {
 	var parity string
 	switch config.Parity {
 	case 0:
-		parity = "NO PARITY"
+		parity = "no parity"
 		break
 	case 1:
-		parity = "ODD PARITY"
+		parity = "odd parity"
 		break
 	case 2:
-		parity = "EVEN PARITY"
+		parity = "even parity"
 		break
 	case 3:
-		parity = "MARK PARITY"
+		parity = "mark parity"
 		break
 	case 4:
-		parity = "SPACE PARITY"
+		parity = "space parity"
 		break
 	}
 
@@ -52,6 +52,8 @@ func (config *Config) Serialize() map[string]string {
 	}
 
 	return map[string]string{
+		"Bit to stuff":          string(BitToStuff),
+		"Frame flag":            BitStuffingFlag + string(CompletedFlag),
 		"Baud rate":             strconv.Itoa(int(config.BaudRate)) + " baud",
 		"Byte size":             strconv.Itoa(int(config.ByteSize)) + " bit",
 		"Parity":                parity,

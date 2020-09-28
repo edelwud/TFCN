@@ -2,7 +2,6 @@ package gui
 
 import (
 	"../serial"
-	"bytes"
 	"regexp"
 	"time"
 
@@ -34,7 +33,6 @@ func CreateStatusBox(transmitter serial.Serial, _ serial.Serial) *widgets.QGroup
 		for {
 			buf := <-dataReceived
 
-			buf = BeautifyFlagBits(buf)
 			buf = BeautifyBitStuffed(buf)
 
 			receivedArea.SetHtml(string(buf))
@@ -89,11 +87,10 @@ func BeautifyFlagBits(data []byte) []byte {
 
 func BeautifyBitStuffed(data []byte) []byte {
 	var result []byte
-	for _, bit := range data {
+	for _, bit := range data[8 : len(data)-9] {
 		result = append(result, bit)
-		if len(result) >= 49 {
-			if bytes.Equal(result[len(result)-49:len(result)-1],
-				ConfigureBackgroundColor([]byte(serial.BitStuffingFlag), "yellow")) {
+		if len(result) >= 8 {
+			if string(result[len(result)-8:len(result)-1]) == serial.BitStuffingFlag {
 				result = result[:len(result)-1]
 				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "cyan")...)
 			}
@@ -136,12 +133,13 @@ func CreateReceiverBox(receiver serial.Serial) *widgets.QGroupBox {
 				continue
 			}
 
-			dataReceived <- packet.Data
+			buf := make([]byte, len(packet.Data))
+			copy(buf, packet.Data)
+
 			packet.DeBitStuffing()
+			dataReceived <- buf
 
-			buf := BeautifyFlagBits(packet.Data)
-
-			receiverTextEdit.SetHtml(string(buf))
+			receiverTextEdit.SetHtml(string(packet.Data))
 		}
 	}()
 
