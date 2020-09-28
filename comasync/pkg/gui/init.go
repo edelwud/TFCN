@@ -72,15 +72,22 @@ func ConfigureBackgroundColor(data []byte, color string) []byte {
 }
 
 func BeautifyBitStuffed(data []byte) []byte {
+	var flag bool
+	var temp []byte
 	var result []byte
 	for _, bit := range data[8 : len(data)-9] {
-		result = append(result, bit)
-		if len(result) >= 8 {
-			if string(result[len(result)-8:len(result)-1]) == serial.BitStuffingFlag {
-				result = result[:len(result)-1]
+		if flag {
+			flag = false
+			continue
+		}
+		temp = append(temp, bit)
+		if len(temp) >= 7 {
+			if string(temp[len(temp)-7:]) == serial.BitStuffingFlag {
 				result = append(result, ConfigureBackgroundColor([]byte{serial.BitToStuff}, "cyan")...)
+				flag = true
 			}
 		}
+		result = append(result, bit)
 	}
 	return result
 }
